@@ -3,9 +3,6 @@
 <head>
 <meta charset="utf-8">
 <title>USM Web · Atari ST Cart Image Builder</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500&display=swap" rel="stylesheet">
 <style>
 {{STYLES}}
 </style>
@@ -22,9 +19,10 @@ window.addEventListener('error', function (e) {
   }
 });
 </script>
+{{CONSENT}}
 </head>
 
-<body>
+<body class="c_darkmode">
 
 <nav class="top-banner">
   <a class="brand-link" href="https://sidecartridge.com" target="_blank" rel="noopener">
@@ -146,6 +144,10 @@ window.addEventListener('error', function (e) {
     <button id="toggleLog" type="button" style="background:#1f2937; color:#f9fafb;">Hide process output</button>
   </div>
   <pre id="log"></pre>
+  <p style="margin-top:16px; font-size:13px; color:#94a3b8;">
+    <a href="#" data-cc="c-settings">Cookies</a> &middot;
+    <a href="https://sidecartridge.com/privacy-policy/" target="_blank" rel="noopener">Privacy policy</a>
+  </p>
 </div>
 
 <dialog id="helpModal" aria-labelledby="helpModalTitle">

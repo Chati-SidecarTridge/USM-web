@@ -2,8 +2,9 @@
 // Bundles src/ into a single self-contained index.html.
 //
 // Inputs:
-//   src/template.html  with {{STYLES}} and {{SCRIPT}} markers
+//   src/template.html  with {{STYLES}}, {{CONSENT}} and {{SCRIPT}} markers
 //   src/styles.css
+//   src/consent.html  with src/vendor/cookieconsent.{css,js}
 //   src/stubs/prg_loader.bin
 //   src/stubs/prg_loader_compressed.bin
 //   src/<module>.js  in MODULE_ORDER
@@ -132,6 +133,10 @@ function main() {
   const template = readText(join(SRC, 'template.html'));
   const styles = readText(join(SRC, 'styles.css'));
   const script = buildScriptBody();
+  // Cookie banner and analytics, shared with sidecartridge.com.
+  const consent = readText(join(SRC, 'consent.html'))
+    .replace('{{COOKIE_CSS}}', () => readText(join(SRC, 'vendor', 'cookieconsent.css')).trim())
+    .replace('{{COOKIE_JS}}', () => readText(join(SRC, 'vendor', 'cookieconsent.js')).trim());
 
   // Use the function form of String.replace so `$&`, `$'`, `$\``, `$1`
   // back-references in the replacement string are NOT interpreted -
@@ -139,6 +144,7 @@ function main() {
   // sequences like `'$'` (e.g. formatAddr's return string).
   let out = template;
   out = out.replace('{{STYLES}}', () => styles.trimEnd());
+  out = out.replace('{{CONSENT}}', () => consent.trimEnd());
   out = out.replace('{{SCRIPT}}', () => script.trimEnd());
 
   // Normalize to LF line endings; never embed timestamps or host paths.

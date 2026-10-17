@@ -27,13 +27,19 @@ To use the app: open `index.html` in a modern browser. No dev server needed.
 
 Source of truth is `src/`. `build.mjs` inlines everything into one self-contained `index.html`:
 
-- `src/template.html`, page chrome (banner, step accordion, progress bar, log pane). Contains two markers: `{{STYLES}}` (replaced by `src/styles.css` content) and `{{SCRIPT}}` (replaced by the concatenated JS body).
+- `src/template.html`, page chrome (banner, step accordion, progress bar, log pane). Contains three markers: `{{STYLES}}` (replaced by `src/styles.css` content), `{{CONSENT}}` (the cookie banner and analytics block, see below) and `{{SCRIPT}}` (replaced by the concatenated JS body).
 - `src/styles.css`, extracted from the picoflash reference; kept as a single sheet because the inlined output is one `<style>` block anyway.
 - `src/stubs/prg_loader.bin`, `src/stubs/prg_loader_compressed.bin`, frozen snapshots of the 68k stub loaders from upstream `atarist-USM`. On every build, `build.mjs` regenerates `src/prg-loader.js` from these (exporting `PRG_LOADER`, `PRG_LOADER_COMPRESSED` as `Uint8Array` constants). `src/prg-loader.js` is committed and generated: never hand-edit it or the `.bin` files. Updating the stubs is a deliberate ceremony, not part of routine work.
 - `src/*.js` modules are concatenated in the order given by `MODULE_ORDER` in `build.mjs` (currently `lzss`, `prg-loader`, `prg`, `gemdos`, `cart-writer`, `classic-mode`, `help-content`, `ui`) into one `<script type="module">` block. A new module must be added to `MODULE_ORDER` after anything it references, or it is silently left out of the bundle. Because every module shares one scope, top-level names must be unique across all of `src/`. Each file uses ESM `export`/`import` so Vitest can import it directly during tests; `build.mjs` naively strips `export ` and `import … from …;` because all files end up in the **same** module scope after concatenation. `export default` and `export { … }` re-exports are rejected by the build, if a module needs to re-export, restructure instead.
 - `build.mjs` itself is the only build dependency. No bundler, no transpiler. Output is deterministic (no timestamps, fixed file order, LF line endings).
 
 CI invariant (`.github/workflows/test.yml`): `npm run build && git diff --exit-code`. If that diff is non-empty, the committed `index.html` and/or `src/prg-loader.js` is stale and the PR is blocked.
+
+## Cookie banner and analytics
+
+The page is published on a sidecartridge.com subdomain and shares the main site's cookie banner and Google Analytics property. `src/consent.html` is the main site's `_includes/framework/cookie-consent.html` (sibling `../sidecartridge-website`) with absolute privacy/contact links, the same block as `../magic-c-builder` and `../rp-webusb-picoflash`. `src/vendor/cookieconsent.{js,css}` are verbatim copies of orestbida/cookieconsent v2.9.2 (MIT); `build.mjs` inlines them into `src/consent.html` and the result at `{{CONSENT}}`. The GA4 tag (`G-6VT9RXTJ2N`) is a `type="text/plain" data-cookiecategory="analytics"` script: it runs only after consent, and only loads gtag on `*.sidecartridge.com`, so local and LAN testing sends no hits. On those hosts `cookie_domain` is `sidecartridge.com`, so the `cc_cookie` choice is shared with the main site. `<body class="c_darkmode">` gives the banner its dark theme; the "Cookies" link (`data-cc="c-settings"`) under the log reopens the settings.
+
+Nothing may reach Google before consent, which is why there are no Google Fonts: the page uses the system font stack. If the main site changes its banner or GA ID, copy the change here.
 
 ## The byte-parity bar
 

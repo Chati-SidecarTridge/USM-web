@@ -8,7 +8,8 @@ This repository contains **USM-web**, a single-file browser application that pac
 
 - `index.html`, generated artifact. Committed; produced by `build.mjs` from `src/`. CI rejects PRs where this drifts.
 - `build.mjs`. Node ESM script that inlines `src/template.html` + `src/styles.css` + `src/*.js` + `src/stubs/*.bin` into `index.html`.
-- `src/template.html`, page chrome with `{{STYLES}}` / `{{SCRIPT}}` markers.
+- `src/template.html`, page chrome with `{{STYLES}}` / `{{CONSENT}}` / `{{SCRIPT}}` markers.
+- `src/consent.html`, `src/vendor/cookieconsent.{css,js}`, the sidecartridge.com cookie banner and consent-gated Google Analytics. Vendor files are verbatim upstream copies; never hand-edit.
 - `src/styles.css`, single stylesheet, extracted from the upstream picoflash reference.
 - `src/stubs/prg_loader.bin`, `src/stubs/prg_loader_compressed.bin`, 68k machine code, frozen snapshots from `atarist-USM`. Never hand-edit.
 - `src/lzss.js`, `src/prg.js`, `src/gemdos.js`, `src/cart-writer.js`, `src/classic-mode.js`, `src/ui.js`. ESM modules. Concatenated into one module scope by the build.
