@@ -14,6 +14,8 @@ USM-web is a single-file browser application (`index.html`) that packages Atari 
 npm ci                 # one-time install
 npm run build          # src/ → index.html  (committed; CI verifies it stays in sync)
 npm test               # Vitest in node
+npx vitest run tests/unit/lzss-compress.test.js   # single test file
+npx vitest run -t "name substring"                # tests matching a name
 npm run verify-goldens # diff JS output against tests/golden/*.ROM
 npm run regen-goldens  # rebuild golden ROMs from the pinned upstream commit
 npm run roundtrip -- path/to/file.prg   # LZSS round-trip helper (mirrors `usm -T`)
@@ -27,11 +29,11 @@ Source of truth is `src/`. `build.mjs` inlines everything into one self-containe
 
 - `src/template.html`, page chrome (banner, step accordion, progress bar, log pane). Contains two markers: `{{STYLES}}` (replaced by `src/styles.css` content) and `{{SCRIPT}}` (replaced by the concatenated JS body).
 - `src/styles.css`, extracted from the picoflash reference; kept as a single sheet because the inlined output is one `<style>` block anyway.
-- `src/stubs/prg_loader.bin`, `src/stubs/prg_loader_compressed.bin`, frozen snapshots of the 68k stub loaders from upstream `atarist-USM`. `build.mjs` reads these and emits them as `Uint8Array` constants (`PRG_LOADER`, `PRG_LOADER_COMPRESSED`) at the top of the inlined script. **Never hand-edit them.** Updating is a deliberate ceremony, not part of routine work.
-- `src/lzss.js`, `src/prg.js`, `src/gemdos.js`, `src/cart-writer.js`, `src/classic-mode.js`, `src/ui.js`, concatenated in that order into one `<script type="module">` block. Each file uses ESM `export`/`import` so Vitest can import it directly during tests; `build.mjs` naively strips `export ` and `import … from …;` because all files end up in the **same** module scope after concatenation. `export default` and `export { … }` re-exports are rejected by the build, if a module needs to re-export, restructure instead.
+- `src/stubs/prg_loader.bin`, `src/stubs/prg_loader_compressed.bin`, frozen snapshots of the 68k stub loaders from upstream `atarist-USM`. On every build, `build.mjs` regenerates `src/prg-loader.js` from these (exporting `PRG_LOADER`, `PRG_LOADER_COMPRESSED` as `Uint8Array` constants). `src/prg-loader.js` is committed and generated: never hand-edit it or the `.bin` files. Updating the stubs is a deliberate ceremony, not part of routine work.
+- `src/*.js` modules are concatenated in the order given by `MODULE_ORDER` in `build.mjs` (currently `lzss`, `prg-loader`, `prg`, `gemdos`, `cart-writer`, `classic-mode`, `help-content`, `ui`) into one `<script type="module">` block. A new module must be added to `MODULE_ORDER` after anything it references, or it is silently left out of the bundle. Because every module shares one scope, top-level names must be unique across all of `src/`. Each file uses ESM `export`/`import` so Vitest can import it directly during tests; `build.mjs` naively strips `export ` and `import … from …;` because all files end up in the **same** module scope after concatenation. `export default` and `export { … }` re-exports are rejected by the build, if a module needs to re-export, restructure instead.
 - `build.mjs` itself is the only build dependency. No bundler, no transpiler. Output is deterministic (no timestamps, fixed file order, LF line endings).
 
-CI invariant: `npm run build && git diff --exit-code index.html`. If that diff is non-empty, the committed `index.html` is stale and the PR is blocked.
+CI invariant (`.github/workflows/test.yml`): `npm run build && git diff --exit-code`. If that diff is non-empty, the committed `index.html` and/or `src/prg-loader.js` is stale and the PR is blocked.
 
 ## The byte-parity bar
 
@@ -47,7 +49,7 @@ Goldens are produced by `tests/goldens.mjs` from a **pinned upstream commit** (`
 - The goldens script `utime`s every fixture to `fixedMtime` before invoking `usm`.
 - The JS integration tests inject `fixedMtime` via a `now()` hook on `src/gemdos.js`.
 
-If you add a fixture or a flag combo, run `npm run regen-goldens` after updating `tests/goldens.flags.js`, then commit the new `tests/golden/*.ROM` alongside the source change.
+If you add a fixture or a flag combo, run `npm run regen-goldens` after updating `tests/goldens.flags.js`, then commit the new `tests/golden/*.ROM` alongside the source change. Bumping the upstream pin has its own runbook in `tests/PIN-BUMP.md`.
 
 ## Things that bite
 
